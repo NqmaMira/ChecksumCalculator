@@ -7,8 +7,13 @@ target_sources(
     checksumlib
     PRIVATE
         "IChecksumCalculator.h"
-        "MD5Calculator.h"
-        "MD5Calculator.cpp"
+        "MD5Calculator.h"        
+        
+        "FileSystemComponent.h"
+        "FileNode.h"
+        "FileNode.cpp"
+        "DirectoryNode.h"
+        "DirectoryNode.cpp"
 )
 
 
