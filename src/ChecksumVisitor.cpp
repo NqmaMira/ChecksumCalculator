@@ -4,14 +4,21 @@
 #include <fstream>
 
 void ChecksumVisitor::visitFile(FileNode& file) {
-    for (auto* obs : observers) obs->onFileStart(file.getPath());
+    for (auto* obs : observers) 
+        obs->onFileStart(file.getPath());
 
     std::ifstream ifs(file.getPath(), std::ios::binary);
-    std::string hash = calculator.calculate(ifs);
 
-    totalProcessed += file.getSize();
+    auto progressLambda = [this](size_t bytesInChunk) {
+        this->totalProcessed += bytesInChunk;
+        for (auto* obs : this->observers) {
+            obs->onBytesProcessed(this->totalProcessed, this->totalSize);
+        }
+    };
+
+    std::string hash = calculator.calculate(ifs, progressLambda);
+
     for (auto* obs : observers) {
-        obs->onBytesProcessed(totalProcessed, totalSize);
         obs->onFileEnd(file.getPath(), hash);
     }
 }

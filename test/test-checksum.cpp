@@ -38,3 +38,33 @@ TEST_CASE("Composite pattern correctly calculates sizes", "[composite]") {
         REQUIRE(root->getSize() == 1500);
     }
 }
+
+TEST_CASE("Calculator callback logic", "[checksum]") {
+    MD5Calculator calc;
+
+    SECTION("Callback receives correct chunk sizes") {
+        std::string data(10000, 'x');
+        std::stringstream ss(data);
+
+        std::vector<size_t> chunks;
+        calc.calculate(ss, [&](size_t bytes) {
+            chunks.push_back(bytes);
+            });
+
+        REQUIRE(chunks.size() == 3);
+        REQUIRE(chunks[0] == 4096);
+        REQUIRE(chunks[1] == 4096);
+        REQUIRE(chunks[2] == 1808);
+
+        size_t total = std::accumulate(chunks.begin(), chunks.end(), size_t(0));
+        REQUIRE(total == 10000);
+    }
+
+    SECTION("Callback works with empty streams") {
+        std::stringstream ss("");
+        bool called = false;
+        calc.calculate(ss, [&](size_t) { called = true; });
+
+        REQUIRE_FALSE(called); 
+    }
+}
