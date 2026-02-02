@@ -12,6 +12,7 @@ target_sources(
     unit-tests
     PRIVATE
         "test-checksum.cpp"
+        "test-builder.cpp"
 )
 
 # Automatically register all tests

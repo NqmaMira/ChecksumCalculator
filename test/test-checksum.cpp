@@ -1,5 +1,3 @@
-//#define CATCH_CONFIG_NO_WINDOWS_SEH
-
 #include "catch2/catch_all.hpp"
 #include "Md5Calculator.h"
 #include <sstream>

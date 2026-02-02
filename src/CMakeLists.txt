@@ -14,6 +14,8 @@ target_sources(
         "FileNode.cpp"
         "DirectoryNode.h"
         "DirectoryNode.cpp"
+        "DirectoryTreeBuilder.h"
+        "DirectoryTreeBuilder.cpp"
 )
 
 
