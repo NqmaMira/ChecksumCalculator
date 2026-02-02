@@ -1,4 +1,5 @@
 #include "DirectoryNode.h"
+#include "IVisitor.h"
 
 void DirectoryNode::addComponent(std::shared_ptr<FileSystemComponent> component) {
 	children.push_back(std::move(component));
@@ -17,4 +18,8 @@ uint64_t DirectoryNode::getSize() const {
 
 bool DirectoryNode::isDirectory() const {
 	return true;
+}
+
+void DirectoryNode::accept(IVisitor& visitor) {
+	visitor.visitDirectory(*this);
 }

@@ -13,6 +13,7 @@ target_sources(
     PRIVATE
         "test-checksum.cpp"
         "test-builder.cpp"
+        "test-visitor.cpp"
 )
 
 # Automatically register all tests

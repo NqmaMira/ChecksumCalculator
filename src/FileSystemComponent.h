@@ -3,6 +3,8 @@
 #include <vector>
 #include <memory>
 
+class IVisitor;
+
 class FileSystemComponent {
 protected:
     std::string name;
@@ -16,8 +18,8 @@ public:
 
     virtual std::string getName() const { return name; }
     virtual std::string getPath() const { return path; }
-
     virtual uint64_t getSize() const = 0;
-
     virtual bool isDirectory() const = 0;
+
+    virtual void accept(IVisitor& visitor) = 0;
 };

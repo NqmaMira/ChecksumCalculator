@@ -13,4 +13,6 @@ public:
     const std::vector<std::shared_ptr<FileSystemComponent>>& getChildren() const;
     uint64_t getSize() const override;
     bool isDirectory() const override;
+
+    void accept(IVisitor& visitor);
 };

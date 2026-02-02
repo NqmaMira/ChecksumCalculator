@@ -10,4 +10,6 @@ public:
 
     uint64_t getSize() const override;
     bool isDirectory() const override;
+
+	void accept(IVisitor& visitor) override;
 };

@@ -6,16 +6,20 @@ set_target_properties(checksumlib PROPERTIES OUTPUT_NAME "checksumcalc")
 target_sources(
     checksumlib
     PRIVATE
-        "IChecksumCalculator.h"
-        "MD5Calculator.h"        
-        
-        "FileSystemComponent.h"
-        "FileNode.h"
-        "FileNode.cpp"
+        "ChecksumVisitor.h"
+        "ChecksumVisitor.cpp"
+        "ConsoleProgressObserver.h"
         "DirectoryNode.h"
         "DirectoryNode.cpp"
         "DirectoryTreeBuilder.h"
         "DirectoryTreeBuilder.cpp"
+        "FileNode.h"
+        "FileNode.cpp"
+        "FileSystemComponent.h"
+        "IChecksumCalculator.h"
+        "IProgressObserver.h"
+        "IVisitor.h"
+        "MD5Calculator.h"   
 )
 
 
