@@ -4,7 +4,7 @@
 #include <fstream>
 
 void ChecksumVisitor::visitFile(FileNode& file) {
-    if (finishedPaths.count(file.getPath())) {
+    if (shouldStop || finishedPaths.count(file.getPath())) {
         return;
     }
 
@@ -14,18 +14,27 @@ void ChecksumVisitor::visitFile(FileNode& file) {
     std::ifstream ifs(file.getPath(), std::ios::binary);
 
     auto progressLambda = [this](size_t bytesInChunk) {
+        if(this->shouldStop) {
+            throw std::runtime_error("Processing stopped by user.");
+		}
         this->totalProcessed += bytesInChunk;
         for (auto* obs : this->observers) {
             obs->onBytesProcessed(this->totalProcessed, this->totalSize);
         }
     };
 
-    std::string hash = calculator.calculate(ifs, progressLambda);
-	file.setHash(hash);
-
-	finishedPaths.insert(file.getPath());
-    for (auto* obs : observers) {
-        obs->onFileEnd(file.getPath(), hash);
+    try {
+        std::string hash = calculator.calculate(ifs, progressLambda);
+        file.setHash(hash);
+        finishedPaths.insert(file.getPath());
+        for (auto* obs : observers) {
+            obs->onFileEnd(file.getPath(), hash);
+        }
+    }
+    catch (const std::string& e) {
+        if (e == "Processing stopped by user.")
+            return;
+        throw;
     }
 }
 

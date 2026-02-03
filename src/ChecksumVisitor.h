@@ -13,6 +13,7 @@ private:
     uint64_t totalSize;
     uint64_t totalProcessed = 0;
     std::set<std::string> finishedPaths;
+    bool shouldStop = false;
 public:
     ChecksumVisitor(IChecksumCalculator& calc, uint64_t total)
         : calculator(calc), totalSize(total) { }
@@ -31,4 +32,6 @@ public:
     std::unique_ptr<ChecksumMemento> createMemento() const {
         return std::unique_ptr<ChecksumMemento>(new ChecksumMemento(totalProcessed, finishedPaths));
     }
+    void stop() { shouldStop = true; }
+    bool hasStopped() const { return shouldStop; }
 };
