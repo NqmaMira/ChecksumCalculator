@@ -16,7 +16,7 @@ target_sources(
         "test-visitor.cpp"
         "test-memento.cpp"
         "test-report.cpp"
-)
+ "test-verification.cpp")
 
 # Automatically register all tests
 catch_discover_tests(unit-tests ADD_TAGS_AS_LABELS)

@@ -7,6 +7,7 @@ target_sources(
     checksumlib
     PRIVATE
         "ChecksumMemento.h"
+        "ChecksumParser.h"
         "ChecksumVisitor.h"
         "ChecksumVisitor.cpp"
         "ConsoleProgressObserver.h"
@@ -22,6 +23,8 @@ target_sources(
         "IVisitor.h"
         "MD5Calculator.h"   
         "PlainTextReportVisitor.h"
+        "VerificationReporter.h"
+        "VerificationVisitor.h"
 )
 
 
