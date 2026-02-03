@@ -4,6 +4,10 @@
 #include <fstream>
 
 void ChecksumVisitor::visitFile(FileNode& file) {
+    if (finishedPaths.count(file.getPath())) {
+        return;
+    }
+
     for (auto* obs : observers) 
         obs->onFileStart(file.getPath());
 
@@ -17,7 +21,9 @@ void ChecksumVisitor::visitFile(FileNode& file) {
     };
 
     std::string hash = calculator.calculate(ifs, progressLambda);
+	file.setHash(hash);
 
+	finishedPaths.insert(file.getPath());
     for (auto* obs : observers) {
         obs->onFileEnd(file.getPath(), hash);
     }

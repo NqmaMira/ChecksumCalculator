@@ -15,3 +15,11 @@ bool FileNode::isDirectory() const {
 void FileNode::accept(IVisitor& visitor) {
 	visitor.visitFile(*this);
 }
+
+void FileNode::setHash(const std::string& hashValue) {
+	hash = hashValue;
+}
+
+std::string FileNode::getHash() const {
+	return hash;
+}

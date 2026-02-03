@@ -6,6 +6,7 @@ set_target_properties(checksumlib PROPERTIES OUTPUT_NAME "checksumcalc")
 target_sources(
     checksumlib
     PRIVATE
+        "ChecksumMemento.h"
         "ChecksumVisitor.h"
         "ChecksumVisitor.cpp"
         "ConsoleProgressObserver.h"
@@ -20,6 +21,7 @@ target_sources(
         "IProgressObserver.h"
         "IVisitor.h"
         "MD5Calculator.h"   
+        "PlainTextReportVisitor.h"
 )
 
 

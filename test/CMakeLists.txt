@@ -14,6 +14,8 @@ target_sources(
         "test-checksum.cpp"
         "test-builder.cpp"
         "test-visitor.cpp"
+        "test-memento.cpp"
+        "test-report.cpp"
 )
 
 # Automatically register all tests

@@ -60,3 +60,35 @@ TEST_CASE("ChecksumVisitor traverses and notifies with real-time updates", "[vis
     }
     fs::remove_all(testDir);
 }
+
+TEST_CASE("ChecksumVisitor with Memento and Real Files", "[visitor]") {
+    fs::path tempFile = fs::current_path() / "test_data.bin";
+    {
+        std::ofstream ofs(tempFile, std::ios::binary);
+        ofs << std::string(10000, 'A');
+    }
+
+    MD5Calculator calc;
+    auto fileNode = std::make_shared<FileNode>("test_data.bin", tempFile.string(), 10000);
+
+    SECTION("Normal Visit") {
+        ChecksumVisitor visitor(calc, 10000);
+        fileNode->accept(visitor);
+        REQUIRE(visitor.getTotalProcessed() == 10000);
+    }
+
+    SECTION("Memento Skip Logic") {
+        ChecksumVisitor visitor1(calc, 10000);
+        fileNode->accept(visitor1);
+
+        auto memento = visitor1.createMemento();
+
+        ChecksumVisitor visitor2(calc, 10000);
+        visitor2.restoreFromMemento(*memento);
+
+        fileNode->accept(visitor2);
+        REQUIRE(visitor2.getTotalProcessed() == 10000);
+    }
+
+    fs::remove(tempFile);
+}
