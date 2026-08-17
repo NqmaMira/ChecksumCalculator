@@ -2,6 +2,7 @@
 #include "FileNode.h"
 #include "DirectoryNode.h"
 #include <fstream>
+#include <iostream>
 
 void ChecksumVisitor::visitFile(FileNode& file) {
     if (shouldStop || finishedPaths.count(file.getPath())) {
@@ -31,11 +32,10 @@ void ChecksumVisitor::visitFile(FileNode& file) {
             obs->onFileEnd(file.getPath(), hash);
         }
     }
-    catch (const std::string& e) {
-        if (e == "Processing stopped by user.")
-            return;
-        throw;
-    }
+    catch (const std::exception& e) {
+		std::cerr << "Error processing file " << file.getPath() << ": " << e.what() << std::endl;
+        return;
+	}
 }
 
 void ChecksumVisitor::visitDirectory(DirectoryNode& dir) {

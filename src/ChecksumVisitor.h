@@ -29,9 +29,11 @@ public:
     }
 
     uint64_t getTotalProcessed() const { return totalProcessed; }
+
     std::unique_ptr<ChecksumMemento> createMemento() const {
         return std::unique_ptr<ChecksumMemento>(new ChecksumMemento(totalProcessed, finishedPaths));
     }
+
     void stop() { shouldStop = true; }
     bool hasStopped() const { return shouldStop; }
 };

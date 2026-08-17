@@ -8,7 +8,6 @@ class ConsoleProgressObserver : public IProgressObserver {
 private:
     using Clock = std::chrono::steady_clock;
     Clock::time_point startTime = Clock::now();
-	//const std::chrono::milliseconds updateInterval{ 100 };
     bool started = false;
 public:
     void onFileStart(const std::string& path) override {

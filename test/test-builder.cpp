@@ -37,3 +37,10 @@ TEST_CASE("DirectoryTreeBuilder creates correct structure", "[builder]") {
 
     fs::remove_all(testDir);
 }
+
+TEST_CASE("DirectoryTreeBuilder handles non-existent paths", "[builder]") {
+    DirectoryTreeBuilder builder;
+    SECTION("Throws on non-existent path") {
+        REQUIRE_THROWS_AS(builder.build("non_existent_path"), std::runtime_error);
+    }
+}

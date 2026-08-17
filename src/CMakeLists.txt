@@ -25,6 +25,7 @@ target_sources(
         "PlainTextReportVisitor.h"
         "VerificationReporter.h"
         "VerificationVisitor.h"
+        "VerificationVisitor.cpp"
 )
 
 
