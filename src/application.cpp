@@ -3,6 +3,13 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <atomic>
+#include <thread>
+#include <chrono>
+
+#ifdef _WIN32
+#include <conio.h>
+#endif
 
 #include "DirectoryTreeBuilder.h"
 #include "MD5Calculator.h"
@@ -29,12 +36,18 @@ int main(int argc, char* argv[]) {
 
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
-        if (arg == "--path" && i + 1 < argc) path = argv[++i];
-        else if (arg == "--algorithm" && i + 1 < argc) algorithm = argv[++i];
-        else if (arg == "--out" && i + 1 < argc) outFilePath = argv[++i];
-        else if (arg == "--checksums" && i + 1 < argc) {
+        if (arg == "--path" && i + 1 < argc) {
+            path = argv[++i];
+        }else if (arg == "--algorithm" && i + 1 < argc) {
+            algorithm = argv[++i];
+        }else if (arg == "--out" && i + 1 < argc) {
+            outFilePath = argv[++i];
+        }else if (arg == "--checksums" && i + 1 < argc) {
             verifyFilePath = argv[++i];
             isVerifyMode = true;
+        }else {
+            printUsage();
+            return 1;
         }
     }
 
@@ -43,8 +56,11 @@ int main(int argc, char* argv[]) {
         auto root = builder.build(path);
 
         std::unique_ptr<IChecksumCalculator> strategy;
-        if (algorithm == "md5") strategy = std::make_unique<MD5Calculator>();
-        else throw std::runtime_error("Unsupported algorithm: " + algorithm);
+        if (algorithm == "md5") {
+            strategy = std::make_unique<MD5Calculator>();
+        } else {
+            throw std::runtime_error("Unsupported algorithm: " + algorithm);
+        }
 
         ChecksumVisitor hasher(*strategy, root->getSize());
         ConsoleProgressObserver progressReporter;
@@ -64,7 +80,62 @@ int main(int argc, char* argv[]) {
         }
         else {
             std::cout << "Calculating checksums for: " << path << "...\n";
-            root->accept(hasher);
+            std::atomic<bool> scanFinished = false;
+            std::thread scanThread;
+
+            auto startScan = [&]() {
+                scanFinished.store(false);
+                scanThread = std::thread([&]() {
+                    root->accept(hasher);
+                    scanFinished.store(true);
+                });
+            };
+
+            auto waitForScan = [&]() {
+                while (!scanFinished.load()) {
+#ifdef _WIN32
+                    if (_kbhit()) {
+#endif
+                        std::string command;
+                        std::getline(std::cin, command);
+                        if (command == "pause") {
+                            hasher.requestPause();
+                        }
+                        else if (command == "quit") {
+                            hasher.stop();
+                        }
+#ifdef _WIN32
+                    }
+#endif
+                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                }
+                scanThread.join();
+            };
+
+            startScan();
+            std::cout << "Commands: pause, resume, quit" << std::endl;
+            waitForScan();
+
+            while (hasher.hasPaused()) {
+                auto savedState = hasher.createMemento();
+                auto progressState = progressReporter.createMemento();
+                std::cout << "Paused. Enter resume or quit." << std::endl;
+
+                std::string command;
+                std::getline(std::cin, command);
+                if (command == "quit") {
+                    return 0;
+                }
+                if (command != "resume") {
+                    continue;
+                }
+
+                hasher.restoreFromMemento(*savedState);
+                hasher.resume();
+                progressReporter.restoreFromMemento(*progressState);
+                startScan();
+                waitForScan();
+            }
 
             if (!outFilePath.empty()) {
                 std::ofstream outFile(outFilePath);

@@ -1,11 +1,13 @@
 #pragma once
 #include "IProgressObserver.h"
 #include <algorithm>
+#include <atomic>
 #include <vector>
 
 class Observable {
 private:
     std::vector<IProgressObserver*> observers;
+    std::atomic<bool> pauseRequested = false;
 
 protected:
     void notifyFileStart(const std::string& path) {
@@ -27,13 +29,21 @@ protected:
     }
 
 public:
+    void requestPause() { 
+        pauseRequested.store(true); 
+    }
+    void clearPauseRequest() { 
+        pauseRequested.store(false); 
+    }
+    bool isPauseRequested() const { 
+        return pauseRequested.load(); 
+    }
+
     void addObserver(IProgressObserver* observer) {
         observers.push_back(observer);
     }
 
     void removeObserver(IProgressObserver* observer) {
-        observers.erase(
-            std::remove(observers.begin(), observers.end(), observer),
-            observers.end());
+        observers.erase(std::remove(observers.begin(), observers.end(), observer), observers.end());
     }
 };

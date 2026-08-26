@@ -12,6 +12,8 @@ private:
     uint64_t totalProcessed = 0;
     std::set<std::string> finishedPaths;
     bool shouldStop = false;
+    bool pausePending = false;
+    bool paused = false;
 public:
     ChecksumVisitor(IChecksumCalculator& calc, uint64_t total)
         : calculator(calc), totalSize(total) { }
@@ -20,16 +22,32 @@ public:
     void visitDirectory(DirectoryNode& dir) override;
 
     void restoreFromMemento(const ChecksumMemento& memento) {
-        this->totalProcessed = memento.savedProcessedBytes;
-        this->finishedPaths = memento.completedFiles;
+        this->totalProcessed = memento.getProcessedBytes();
+        this->finishedPaths = memento.getCompletedFiles();
+        this->pausePending = false;
+        this->paused = false;
     }
 
-    uint64_t getTotalProcessed() const { return totalProcessed; }
+    uint64_t getTotalProcessed() const { 
+        return totalProcessed; 
+    }
 
     std::unique_ptr<ChecksumMemento> createMemento() const {
         return std::unique_ptr<ChecksumMemento>(new ChecksumMemento(totalProcessed, finishedPaths));
     }
 
-    void stop() { shouldStop = true; }
-    bool hasStopped() const { return shouldStop; }
+    void stop() { 
+        shouldStop = true; 
+    }
+    bool hasStopped() const { 
+        return shouldStop; 
+    }
+    bool hasPaused() const { 
+        return paused; 
+    }
+    void resume() {
+        paused = false;
+        pausePending = false;
+        clearPauseRequest();
+    }
 };

@@ -7,7 +7,8 @@ class IChecksumCalculator {
 public:
     virtual ~IChecksumCalculator() = default;
 
-    std::string calculate(std::istream& is, std::function<void(size_t)> progressCallback = nullptr) {
+    std::string calculate(std::istream& is, std::function<void(size_t)> progressCallback = nullptr,
+        std::function<bool()> pauseRequested = nullptr) {
         reset();
         char buffer[4096];
         while (is.read(buffer, sizeof(buffer))) {
@@ -15,12 +16,18 @@ public:
             update(buffer, bytesRead);
             if(progressCallback)
 				progressCallback(bytesRead);
+            if (pauseRequested) {
+                pauseRequested();
+            }
         }
         size_t finalBytes = is.gcount();
         if (finalBytes > 0) {
             update(buffer, finalBytes);
             if (progressCallback) 
                 progressCallback(finalBytes);
+            if (pauseRequested) {
+                pauseRequested();
+            }
         }
         return getResult();
     }

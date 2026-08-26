@@ -5,6 +5,7 @@
 #include "DirectoryNode.h"
 #include <fstream>
 #include <filesystem>
+#include <functional>
 
 namespace fs = std::filesystem;
 
@@ -14,11 +15,15 @@ public:
     int filesFinished = 0;
     uint64_t lastBytes = 0;
     uint64_t totalSizeExpected = 0;
+    std::function<void()> onProgress;
 
     void onFileStart(const std::string&) override { filesStarted++; }
     void onBytesProcessed(uint64_t bytes, uint64_t totalBytes) override { 
         lastBytes = bytes; 
 		totalSizeExpected = totalBytes;
+        if (onProgress) {
+            onProgress();
+        }
     }
     void onFileEnd(const std::string&, const std::string&) override { filesFinished++; }
 };
@@ -91,4 +96,73 @@ TEST_CASE("ChecksumVisitor with Memento and Real Files", "[visitor]") {
     }
 
     fs::remove(tempFile);
+}
+
+TEST_CASE("ChecksumVisitor pauses at a file boundary and resumes", "[pause][resume]") {
+    fs::path testDir = fs::current_path() / "pause_resume_test_temp";
+    fs::create_directory(testDir);
+
+    auto path1 = (testDir / "a.bin").string();
+    auto path2 = (testDir / "b.bin").string();
+    std::ofstream(path1, std::ios::binary) << std::string(4096, 'a');
+    std::ofstream(path2, std::ios::binary) << std::string(4096, 'b');
+
+    auto root = std::make_shared<DirectoryNode>("root", testDir.string());
+    auto file1 = std::make_shared<FileNode>("a.bin", path1, 4096);
+    auto file2 = std::make_shared<FileNode>("b.bin", path2, 4096);
+    root->addComponent(file1);
+    root->addComponent(file2);
+
+    MD5Calculator calculator;
+    ChecksumVisitor visitor(calculator, 8192);
+    visitor.requestPause();
+
+    root->accept(visitor);
+
+    REQUIRE(visitor.hasPaused());
+    REQUIRE(visitor.getTotalProcessed() == 4096);
+    REQUIRE_FALSE(file1->getHash().empty());
+    REQUIRE(file2->getHash().empty());
+
+    visitor.resume();
+    root->accept(visitor);
+
+    REQUIRE_FALSE(visitor.hasPaused());
+    REQUIRE(visitor.getTotalProcessed() == 8192);
+    REQUIRE_FALSE(file2->getHash().empty());
+
+    fs::remove_all(testDir);
+}
+
+TEST_CASE("ChecksumVisitor stops traversal after a stop request", "[stop]") {
+    fs::path testDir = fs::current_path() / "stop_test_temp";
+    fs::create_directory(testDir);
+
+    auto path1 = (testDir / "a.bin").string();
+    auto path2 = (testDir / "b.bin").string();
+    std::ofstream(path1, std::ios::binary) << std::string(4096, 'a');
+    std::ofstream(path2, std::ios::binary) << std::string(4096, 'b');
+
+    auto root = std::make_shared<DirectoryNode>("root", testDir.string());
+    auto file1 = std::make_shared<FileNode>("a.bin", path1, 4096);
+    auto file2 = std::make_shared<FileNode>("b.bin", path2, 4096);
+    root->addComponent(file1);
+    root->addComponent(file2);
+
+    MD5Calculator calculator;
+    ChecksumVisitor visitor(calculator, 8192);
+    MockObserver observer;
+    observer.onProgress = [&visitor]() { 
+        visitor.stop(); 
+    };
+    visitor.addObserver(&observer);
+
+    root->accept(visitor);
+
+    REQUIRE(visitor.hasStopped());
+    REQUIRE(visitor.getTotalProcessed() == 4096);
+    REQUIRE_FALSE(file1->getHash().empty());
+    REQUIRE(file2->getHash().empty());
+
+    fs::remove_all(testDir);
 }

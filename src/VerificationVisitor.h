@@ -33,5 +33,7 @@ public:
     void visitDirectory(DirectoryNode& dir) override;
     void finalize();
 
-    const std::vector<VerificationResult>& getResults() const { return results; }
+    const std::vector<VerificationResult>& getResults() const { 
+        return results; 
+    }
 };
