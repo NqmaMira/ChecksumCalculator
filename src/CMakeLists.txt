@@ -22,6 +22,7 @@ target_sources(
         "IProgressObserver.h"
         "IVisitor.h"
         "MD5Calculator.h"   
+        "Observable.h"
         "PlainTextReportVisitor.h"
         "VerificationReporter.h"
         "VerificationVisitor.h"

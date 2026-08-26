@@ -9,8 +9,7 @@ void ChecksumVisitor::visitFile(FileNode& file) {
         return;
     }
 
-    for (auto* obs : observers) 
-        obs->onFileStart(file.getPath());
+    notifyFileStart(file.getPath());
 
     std::ifstream ifs(file.getPath(), std::ios::binary);
 
@@ -19,18 +18,14 @@ void ChecksumVisitor::visitFile(FileNode& file) {
             throw std::runtime_error("Processing stopped by user.");
 		}
         this->totalProcessed += bytesInChunk;
-        for (auto* obs : this->observers) {
-            obs->onBytesProcessed(this->totalProcessed, this->totalSize);
-        }
+        notifyBytesProcessed(this->totalProcessed, this->totalSize);
     };
 
     try {
         std::string hash = calculator.calculate(ifs, progressLambda);
         file.setHash(hash);
         finishedPaths.insert(file.getPath());
-        for (auto* obs : observers) {
-            obs->onFileEnd(file.getPath(), hash);
-        }
+        notifyFileEnd(file.getPath(), hash);
     }
     catch (const std::exception& e) {
 		std::cerr << "Error processing file " << file.getPath() << ": " << e.what() << std::endl;
