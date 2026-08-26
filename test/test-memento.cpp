@@ -15,18 +15,21 @@ void write_file(const std::string& path, size_t size) {
 }
 
 TEST_CASE("Memento saves and restores state correctly", "[memento]") {
+    constexpr size_t FirstFileSize = 100;
+    constexpr size_t SecondFileSize = 200;
+    constexpr size_t ExpectedTotalSize = FirstFileSize + SecondFileSize;
     fs::path testDir = fs::current_path() / "memento_test";
     fs::create_directories(testDir);
 
     std::string p1 = (testDir / "file1.bin").string();
     std::string p2 = (testDir / "file2.bin").string();
-    write_file(p1, 100);
-    write_file(p2, 200);
+    write_file(p1, FirstFileSize);
+    write_file(p2, SecondFileSize);
 
     MD5Calculator calc;
     auto root = std::make_shared<DirectoryNode>("root", testDir.string());
-    auto f1 = std::make_shared<FileNode>("file1.bin", p1, 100);
-    auto f2 = std::make_shared<FileNode>("file2.bin", p2, 200);
+    auto f1 = std::make_shared<FileNode>("file1.bin", p1, FirstFileSize);
+    auto f2 = std::make_shared<FileNode>("file2.bin", p2, SecondFileSize);
     root->addComponent(f1);
     root->addComponent(f2);
 
@@ -37,14 +40,14 @@ TEST_CASE("Memento saves and restores state correctly", "[memento]") {
         f1->accept(visitor1);
 
         auto memento = visitor1.createMemento();
-        REQUIRE(visitor1.getTotalProcessed() == 100);
+        REQUIRE(visitor1.getTotalProcessed() == FirstFileSize);
 
         ChecksumVisitor visitor2(calc, totalSize);
         visitor2.restoreFromMemento(*memento);
 
         root->accept(visitor2);
 
-        REQUIRE(visitor2.getTotalProcessed() == 300);
+        REQUIRE(visitor2.getTotalProcessed() == ExpectedTotalSize);
     }
 
     fs::remove_all(testDir);

@@ -12,18 +12,21 @@ void create_dummy_file(const fs::path& p, size_t size) {
 }
 
 TEST_CASE("DirectoryTreeBuilder creates correct structure", "[builder]") {
+    constexpr size_t FirstFileSize = 100;
+    constexpr size_t SecondFileSize = 250;
+    constexpr size_t ExpectedDirectorySize = FirstFileSize + SecondFileSize;
     fs::path testDir = fs::current_path() / "test_root";
     fs::create_directories(testDir / "subdir");
 
-    create_dummy_file(testDir / "file1.dat", 100);
-    create_dummy_file(testDir / "subdir/file2.dat", 250);
+    create_dummy_file(testDir / "file1.dat", FirstFileSize);
+    create_dummy_file(testDir / "subdir/file2.dat", SecondFileSize);
 
     DirectoryTreeBuilder builder;
     auto root = builder.build(testDir.string());
 
     SECTION("Tree reflects disk hierarchy and sizes") {
         REQUIRE(root->isDirectory() == true);
-        REQUIRE(root->getSize() == 350);
+        REQUIRE(root->getSize() == ExpectedDirectorySize);
     }
 
     SECTION("Cycle detection via symlinks") {
@@ -31,7 +34,7 @@ TEST_CASE("DirectoryTreeBuilder creates correct structure", "[builder]") {
         fs::create_directory_symlink(testDir, testDir / "subdir/loop");
 
         auto rootWithLoop = builder.build(testDir.string());
-        REQUIRE(rootWithLoop->getSize() == 350);
+        REQUIRE(rootWithLoop->getSize() == ExpectedDirectorySize);
         #endif
     }
 

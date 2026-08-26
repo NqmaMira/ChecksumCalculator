@@ -3,6 +3,7 @@
 #include "IChecksumCalculator.h"
 #include "Observable.h"
 #include <set>
+#include <atomic>
 #include <ChecksumMemento.h>
 
 class ChecksumVisitor : public IVisitor, public Observable {
@@ -11,7 +12,7 @@ private:
     uint64_t totalSize;
     uint64_t totalProcessed = 0;
     std::set<std::string> finishedPaths;
-    bool shouldStop = false;
+    std::atomic<bool> shouldStop = false;
     bool pausePending = false;
     bool paused = false;
 public:
@@ -37,10 +38,10 @@ public:
     }
 
     void stop() { 
-        shouldStop = true; 
+        shouldStop.store(true);
     }
     bool hasStopped() const { 
-        return shouldStop; 
+        return shouldStop.load();
     }
     bool hasPaused() const { 
         return paused; 

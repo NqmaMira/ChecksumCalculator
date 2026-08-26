@@ -20,6 +20,10 @@
 #include "ChecksumParser.h"
 #include "VerificationReporter.h"
 
+namespace {
+    constexpr auto ScanInterval = std::chrono::milliseconds(50);
+}
+
 void printUsage() {
     std::cout << "FMI Checksum Calculator\n"
         << "Usage:\n"
@@ -45,9 +49,9 @@ int main(int argc, char* argv[]) {
         }else if (arg == "--checksums" && i + 1 < argc) {
             verifyFilePath = argv[++i];
             isVerifyMode = true;
-        }else {
+        }else if (arg == "--help") {
             printUsage();
-            return 1;
+            return 0;   
         }
     }
 
@@ -107,7 +111,7 @@ int main(int argc, char* argv[]) {
 #ifdef _WIN32
                     }
 #endif
-                    std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                    std::this_thread::sleep_for(ScanInterval);
                 }
                 scanThread.join();
             };

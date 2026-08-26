@@ -4,13 +4,16 @@
 #include <functional>
 
 class IChecksumCalculator {
+private:
+    static constexpr std::size_t ChecksumBufferSize = 4 * 1024;
+
 public:
     virtual ~IChecksumCalculator() = default;
 
     std::string calculate(std::istream& is, std::function<void(size_t)> progressCallback = nullptr,
         std::function<bool()> pauseRequested = nullptr) {
         reset();
-        char buffer[4096];
+        char buffer[ChecksumBufferSize];
         while (is.read(buffer, sizeof(buffer))) {
 			size_t bytesRead = is.gcount();
             update(buffer, bytesRead);

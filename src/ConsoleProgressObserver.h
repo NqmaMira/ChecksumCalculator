@@ -8,6 +8,7 @@
 
 class ConsoleProgressObserver : public IProgressObserver {
 private:
+    static constexpr double PercentageScale = 100.0;
     using Clock = std::chrono::steady_clock;
     Clock::time_point startTime = Clock::now();
     bool started = false;
@@ -27,7 +28,7 @@ public:
 		processedBytes = bytes;
 		auto now = Clock::now();
 		auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
-        double percentage = (totalBytes > 0) ? (static_cast<double>(bytes) / totalBytes) * 100.0 : 0;
+        double percentage = (totalBytes > 0) ? (static_cast<double>(bytes) / totalBytes) * PercentageScale : 0;
 
         std::string etaStr = "Calculating...";
         if (elapsed > 0 && bytes > 0) {

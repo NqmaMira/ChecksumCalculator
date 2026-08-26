@@ -20,30 +20,36 @@ TEST_CASE("MD5 Calculator verifies known strings", "[checksum]") {
 
 TEST_CASE("Composite pattern correctly calculates sizes", "[composite]") {
     auto root = std::make_shared<DirectoryNode>("root", "/root");
-    auto file1 = std::make_shared<FileNode>("file1.txt", "/root/file1.txt", 1000);
+    constexpr size_t FileOneSize = 1000;
+    constexpr size_t FileTwoSize = 500;
+    constexpr size_t TotalTreeSize = FileOneSize + FileTwoSize;
+    auto file1 = std::make_shared<FileNode>("file1.txt", "/root/file1.txt", FileOneSize);
     auto subDir = std::make_shared<DirectoryNode>("subdir", "/root/subdir");
-    auto file2 = std::make_shared<FileNode>("file2.txt", "/root/subdir/file2.txt", 500);
+    auto file2 = std::make_shared<FileNode>("file2.txt", "/root/subdir/file2.txt", FileTwoSize);
 
     subDir->addComponent(file2);
     root->addComponent(file1);
     root->addComponent(subDir);
 
     SECTION("File nodes return their individual size") {
-        REQUIRE(file1->getSize() == 1000);
-        REQUIRE(file2->getSize() == 500);
+        REQUIRE(file1->getSize() == FileOneSize);
+        REQUIRE(file2->getSize() == FileTwoSize);
     }
 
     SECTION("Directory nodes return the sum of children") {
-        REQUIRE(subDir->getSize() == 500);
-        REQUIRE(root->getSize() == 1500);
+        REQUIRE(subDir->getSize() == FileTwoSize);
+        REQUIRE(root->getSize() == TotalTreeSize);
     }
 }
 
 TEST_CASE("Calculator callback logic", "[checksum]") {
     MD5Calculator calc;
+    constexpr size_t TestInputSize = 10000;
+    constexpr size_t ChecksumBufferSize = 4 * 1024;
+    constexpr size_t ExpectedFinalChunkSize = TestInputSize - (2 * ChecksumBufferSize);
 
     SECTION("Callback receives correct chunk sizes") {
-        std::string data(10000, 'x');
+        std::string data(TestInputSize, 'x');
         std::stringstream ss(data);
 
         std::vector<size_t> chunks;
@@ -52,12 +58,12 @@ TEST_CASE("Calculator callback logic", "[checksum]") {
             });
 
         REQUIRE(chunks.size() == 3);
-        REQUIRE(chunks[0] == 4096);
-        REQUIRE(chunks[1] == 4096);
-        REQUIRE(chunks[2] == 1808);
+        REQUIRE(chunks[0] == ChecksumBufferSize);
+        REQUIRE(chunks[1] == ChecksumBufferSize);
+        REQUIRE(chunks[2] == ExpectedFinalChunkSize);
 
         size_t total = std::accumulate(chunks.begin(), chunks.end(), size_t(0));
-        REQUIRE(total == 10000);
+        REQUIRE(total == TestInputSize);
     }
 
     SECTION("Callback works with empty streams") {

@@ -29,6 +29,8 @@ public:
 };
 
 TEST_CASE("ChecksumVisitor traverses and notifies with real-time updates", "[visitor]") {
+    constexpr size_t FileSize = 5;
+    constexpr size_t ExpectedTotalSize = 2 * FileSize;
     fs::path testDir = fs::current_path() / "visitor_test_temp";
     fs::create_directory(testDir);
 
@@ -43,8 +45,8 @@ TEST_CASE("ChecksumVisitor traverses and notifies with real-time updates", "[vis
     
     MD5Calculator calc;
     auto root = std::make_shared<DirectoryNode>("root", testDir.string());
-    auto f1 = std::make_shared<FileNode>("a.txt", path1, 5);
-    auto f2 = std::make_shared<FileNode>("b.txt", path2, 5);
+    auto f1 = std::make_shared<FileNode>("a.txt", path1, FileSize);
+    auto f2 = std::make_shared<FileNode>("b.txt", path2, FileSize);
     root->addComponent(f1);
     root->addComponent(f2);
 
@@ -60,67 +62,70 @@ TEST_CASE("ChecksumVisitor traverses and notifies with real-time updates", "[vis
     }
 
     SECTION("Visitor reports correct cumulative byte progression") {
-        REQUIRE(mock.lastBytes == 10);
-        REQUIRE(mock.totalSizeExpected == 10);
+        REQUIRE(mock.lastBytes == ExpectedTotalSize);
+        REQUIRE(mock.totalSizeExpected == ExpectedTotalSize);
     }
     fs::remove_all(testDir);
 }
 
 TEST_CASE("ChecksumVisitor with Memento and Real Files", "[visitor]") {
+    constexpr size_t TestFileSize = 10000;
     fs::path tempFile = fs::current_path() / "test_data.bin";
     {
         std::ofstream ofs(tempFile, std::ios::binary);
-        ofs << std::string(10000, 'A');
+        ofs << std::string(TestFileSize, 'A');
     }
 
     MD5Calculator calc;
-    auto fileNode = std::make_shared<FileNode>("test_data.bin", tempFile.string(), 10000);
+    auto fileNode = std::make_shared<FileNode>("test_data.bin", tempFile.string(), TestFileSize);
 
     SECTION("Normal Visit") {
-        ChecksumVisitor visitor(calc, 10000);
+        ChecksumVisitor visitor(calc, TestFileSize);
         fileNode->accept(visitor);
-        REQUIRE(visitor.getTotalProcessed() == 10000);
+        REQUIRE(visitor.getTotalProcessed() == TestFileSize);
     }
 
     SECTION("Memento Skip Logic") {
-        ChecksumVisitor visitor1(calc, 10000);
+        ChecksumVisitor visitor1(calc, TestFileSize);
         fileNode->accept(visitor1);
 
         auto memento = visitor1.createMemento();
 
-        ChecksumVisitor visitor2(calc, 10000);
+        ChecksumVisitor visitor2(calc, TestFileSize);
         visitor2.restoreFromMemento(*memento);
 
         fileNode->accept(visitor2);
-        REQUIRE(visitor2.getTotalProcessed() == 10000);
+        REQUIRE(visitor2.getTotalProcessed() == TestFileSize);
     }
 
     fs::remove(tempFile);
 }
 
 TEST_CASE("ChecksumVisitor pauses at a file boundary and resumes", "[pause][resume]") {
+    constexpr size_t FileSize = 4 * 1024;
+    constexpr size_t TotalSize = 2 * FileSize;
     fs::path testDir = fs::current_path() / "pause_resume_test_temp";
     fs::create_directory(testDir);
 
     auto path1 = (testDir / "a.bin").string();
     auto path2 = (testDir / "b.bin").string();
-    std::ofstream(path1, std::ios::binary) << std::string(4096, 'a');
-    std::ofstream(path2, std::ios::binary) << std::string(4096, 'b');
+    std::ofstream(path1, std::ios::binary) << std::string(FileSize, 'a');
+    std::ofstream(path2, std::ios::binary) << std::string(FileSize, 'b');
 
     auto root = std::make_shared<DirectoryNode>("root", testDir.string());
-    auto file1 = std::make_shared<FileNode>("a.bin", path1, 4096);
-    auto file2 = std::make_shared<FileNode>("b.bin", path2, 4096);
+    auto file1 = std::make_shared<FileNode>("a.bin", path1, FileSize);
+    auto file2 = std::make_shared<FileNode>("b.bin", path2, FileSize);
     root->addComponent(file1);
     root->addComponent(file2);
 
     MD5Calculator calculator;
-    ChecksumVisitor visitor(calculator, 8192);
+    ChecksumVisitor visitor(calculator, TotalSize);
     visitor.requestPause();
 
     root->accept(visitor);
 
     REQUIRE(visitor.hasPaused());
-    REQUIRE(visitor.getTotalProcessed() == 4096);
+    REQUIRE(visitor.getTotalProcessed() == FileSize);
     REQUIRE_FALSE(file1->getHash().empty());
     REQUIRE(file2->getHash().empty());
 
@@ -128,29 +133,31 @@ TEST_CASE("ChecksumVisitor pauses at a file boundary and resumes", "[pause][resu
     root->accept(visitor);
 
     REQUIRE_FALSE(visitor.hasPaused());
-    REQUIRE(visitor.getTotalProcessed() == 8192);
+    REQUIRE(visitor.getTotalProcessed() == TotalSize);
     REQUIRE_FALSE(file2->getHash().empty());
 
     fs::remove_all(testDir);
 }
 
 TEST_CASE("ChecksumVisitor stops traversal after a stop request", "[stop]") {
+    constexpr size_t FileSize = 4 * 1024;
+    constexpr size_t TotalSize = 2 * FileSize;
     fs::path testDir = fs::current_path() / "stop_test_temp";
     fs::create_directory(testDir);
 
     auto path1 = (testDir / "a.bin").string();
     auto path2 = (testDir / "b.bin").string();
-    std::ofstream(path1, std::ios::binary) << std::string(4096, 'a');
-    std::ofstream(path2, std::ios::binary) << std::string(4096, 'b');
+    std::ofstream(path1, std::ios::binary) << std::string(FileSize, 'a');
+    std::ofstream(path2, std::ios::binary) << std::string(FileSize, 'b');
 
     auto root = std::make_shared<DirectoryNode>("root", testDir.string());
-    auto file1 = std::make_shared<FileNode>("a.bin", path1, 4096);
-    auto file2 = std::make_shared<FileNode>("b.bin", path2, 4096);
+    auto file1 = std::make_shared<FileNode>("a.bin", path1, FileSize);
+    auto file2 = std::make_shared<FileNode>("b.bin", path2, FileSize);
     root->addComponent(file1);
     root->addComponent(file2);
 
     MD5Calculator calculator;
-    ChecksumVisitor visitor(calculator, 8192);
+    ChecksumVisitor visitor(calculator, TotalSize);
     MockObserver observer;
     observer.onProgress = [&visitor]() { 
         visitor.stop(); 
@@ -160,7 +167,7 @@ TEST_CASE("ChecksumVisitor stops traversal after a stop request", "[stop]") {
     root->accept(visitor);
 
     REQUIRE(visitor.hasStopped());
-    REQUIRE(visitor.getTotalProcessed() == 4096);
+    REQUIRE(visitor.getTotalProcessed() == FileSize);
     REQUIRE_FALSE(file1->getHash().empty());
     REQUIRE(file2->getHash().empty());
 

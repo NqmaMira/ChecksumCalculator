@@ -6,6 +6,7 @@
 #include <VerificationReporter.h>
 
 TEST_CASE("Verification logic handles all 4 cases", "[verification]") {
+    constexpr size_t TestFileSize = 10;
     std::map<std::string, std::string> saved = {
         {"/root/unchanged.bin", "aaaa"},
         {"/root/changed.bin", "bbbb"},
@@ -14,13 +15,13 @@ TEST_CASE("Verification logic handles all 4 cases", "[verification]") {
 
     auto root = std::make_shared<DirectoryNode>("root", "/root");
 
-    auto f_unchanged = std::make_shared<FileNode>("unchanged.bin", "/root/unchanged.bin", 10);
+    auto f_unchanged = std::make_shared<FileNode>("unchanged.bin", "/root/unchanged.bin", TestFileSize);
     f_unchanged->setHash("aaaa");
 
-    auto f_changed = std::make_shared<FileNode>("changed.bin", "/root/changed.bin", 10);
+    auto f_changed = std::make_shared<FileNode>("changed.bin", "/root/changed.bin", TestFileSize);
     f_changed->setHash("xxxx");
 
-    auto f_new = std::make_shared<FileNode>("new.bin", "/root/new.bin", 10);
+    auto f_new = std::make_shared<FileNode>("new.bin", "/root/new.bin", TestFileSize);
     f_new->setHash("dddd");
 
     root->addComponent(f_unchanged);
