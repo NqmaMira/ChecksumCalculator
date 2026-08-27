@@ -3,6 +3,7 @@
 #include "FileNode.h"
 #include "DirectoryNode.h"
 #include <iostream>
+#include <string>
 #include <vector>
 
 class JsonReportVisitor : public IVisitor {
@@ -12,18 +13,39 @@ private:
 
     void printIndent() { for (int i = 0; i < indent; ++i) out << "  "; }
 
+    static std::string escapeJson(const std::string& value) {
+        std::string escaped;
+        for (char character : value) {
+            switch (character) {
+            case '\\': escaped += "\\\\"; break;
+            case '"': escaped += "\\\""; break;
+            case '\n': escaped += "\\n"; break;
+            case '\r': escaped += "\\r"; break;
+            case '\t': escaped += "\\t"; break;
+            default: escaped += character; break;
+            }
+        }
+        return escaped;
+    }
+
 public:
     JsonReportVisitor(std::ostream& output) : out(output) {}
 
     void visitFile(FileNode& file) override {
         printIndent();
-        out << "{ \"file\": \"" << file.getName()
-            << "\", \"hash\": \"" << file.getHash() << "\" }";
+        out << "{ \"file\": \"" << escapeJson(file.getName())
+            << "\", \"hash\": \"" << escapeJson(file.getHash()) << "\" }";
     }
 
     void visitDirectory(DirectoryNode& dir) override {
+        const bool isRoot = indent == 0;
+        if (isRoot) {
+            out << "{\n";
+            indent++;
+        }
+
         printIndent();
-        out << "\"" << dir.getName() << "\": [\n";
+        out << "\"" << escapeJson(dir.getName()) << "\": [\n";
         indent++;
 
         const auto& children = dir.getChildren();
@@ -36,5 +58,10 @@ public:
         indent--;
         printIndent();
         out << "]";
+
+        if (isRoot) {
+            out << "\n}\n";
+            indent--;
+        }
     }
 };

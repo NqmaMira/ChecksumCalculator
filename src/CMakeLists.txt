@@ -25,6 +25,7 @@ target_sources(
         "IVisitor.h"
         "MD5Calculator.h"   
         "Observable.h"
+        "JsonReportVisitor.h"
         "PlainTextReportVisitor.h"
         "VerificationReporter.h"
         "VerificationVisitor.h"
