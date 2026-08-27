@@ -3,10 +3,6 @@
 #include <vector>
 #include <memory>
 #include <map>
-#include <atomic>
-#include <thread>
-#include <chrono>
-
 #ifdef _WIN32
 #include <conio.h>
 #endif
@@ -19,16 +15,15 @@
 #include "VerificationVisitor.h"
 #include "ChecksumParser.h"
 #include "VerificationReporter.h"
-
-namespace {
-    constexpr auto ScanInterval = std::chrono::milliseconds(50);
-}
+#include "ChecksumController.h"
 
 void printUsage() {
     std::cout << "FMI Checksum Calculator\n"
         << "Usage:\n"
         << "  --path <dir> [--algorithm md5|sha1] [--out <file>] : Calculate hashes\n"
-        << "  --checksums <file> [--path <dir>]                : Verify directory against file\n";
+        << "  --checksums <file> [--path <dir>]                : Verify directory against file\n"
+        << "  --help                                           : Show this help message\n"
+        << "Commands during calculation: pause, resume, quit\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -84,66 +79,23 @@ int main(int argc, char* argv[]) {
         }
         else {
             std::cout << "Calculating checksums for: " << path << "...\n";
-            std::atomic<bool> scanFinished = false;
-            std::thread scanThread;
-
-            auto startScan = [&]() {
-                scanFinished.store(false);
-                scanThread = std::thread([&]() {
-                    root->accept(hasher);
-                    scanFinished.store(true);
-                });
-            };
-
-            auto waitForScan = [&]() {
-                while (!scanFinished.load()) {
+            auto commandAvailable = []() {
 #ifdef _WIN32
-                    if (_kbhit()) {
+                return _kbhit() != 0;
+#else
+                return true;
 #endif
-                        std::string command;
-                        std::getline(std::cin, command);
-                        if (command == "pause") {
-                            hasher.requestPause();
-                        }
-                        else if (command == "quit") {
-                            hasher.stop();
-                        }
-#ifdef _WIN32
-                    }
-#endif
-                    std::this_thread::sleep_for(ScanInterval);
-                }
-                scanThread.join();
             };
-
-            startScan();
-            std::cout << "Commands: pause, resume, quit" << std::endl;
-            waitForScan();
-
-            std::unique_ptr<ChecksumMemento> savedCheckpoint;
-
-            while (hasher.hasPaused()) {
-                if (!savedCheckpoint) {
-                    savedCheckpoint = hasher.createMemento();
-                }
-
-                std::cout << "Paused. Enter resume or quit." << std::endl;
-
+            auto readCommand = []() {
                 std::string command;
                 std::getline(std::cin, command);
-                if (command == "quit") {
-                    return 0;
-                }
-                if (command != "resume") {
-                    continue;
-                }
+                return command;
+            };
 
-                hasher.restoreFromMemento(*savedCheckpoint);
-                progressReporter.restoreFromMemento(*savedCheckpoint);
-                hasher.resume();
-                savedCheckpoint.reset();
-                startScan();
-                waitForScan();
+            ChecksumController controller(*root, hasher, progressReporter, std::cout,
+                commandAvailable, readCommand);
+            if (!controller.run()) {
+                return 0;
             }
 
             if (!outFilePath.empty()) {

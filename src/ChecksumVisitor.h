@@ -17,48 +17,23 @@ private:
     bool pausePending = false;
     bool paused = false;
 public:
-    ChecksumVisitor(IChecksumCalculator& calc, uint64_t total)
-        : calculator(calc), totalSize(total) { }
+    ChecksumVisitor(IChecksumCalculator& calc, uint64_t total);
 
     void visitFile(FileNode& file) override;
     void visitDirectory(DirectoryNode& dir) override;
 
-    void restoreFromMemento(const ChecksumMemento& memento) {
-        this->totalProcessed = memento.getProcessedBytes();
-        this->finishedPaths = memento.getCompletedFiles();
-        this->currentFile = memento.getCurrentFile();
-        this->pausePending = false;
-        this->paused = false;
-    }
+    void restoreFromMemento(const ChecksumMemento& memento);
 
-    uint64_t getTotalProcessed() const {
-        return totalProcessed;
-    }
+    uint64_t getTotalProcessed() const;
 
-    const std::set<std::string>& getCompletedFiles() const {
-        return finishedPaths;
-    }
+    const std::set<std::string>& getCompletedFiles() const;
 
-    const std::string& getCurrentFile() const {
-        return currentFile;
-    }
+    const std::string& getCurrentFile() const;
 
-    std::unique_ptr<ChecksumMemento> createMemento() const {
-        return std::make_unique<ChecksumMemento>(totalProcessed, finishedPaths, currentFile);
-    }
+    std::unique_ptr<ChecksumMemento> createMemento() const;
 
-    void stop() {
-        shouldStop.store(true);
-    }
-    bool hasStopped() const {
-        return shouldStop.load();
-    }
-    bool hasPaused() const {
-        return paused;
-    }
-    void resume() {
-        paused = false;
-        pausePending = false;
-        clearPauseRequest();
-    }
+    void stop();
+    bool hasStopped() const;
+    bool hasPaused() const;
+    void resume();
 };

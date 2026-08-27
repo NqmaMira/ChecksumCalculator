@@ -7,6 +7,8 @@ target_sources(
     checksumlib
     PRIVATE
         "ChecksumMemento.h"
+        "ChecksumController.h"
+        "ChecksumController.cpp"
         "ChecksumParser.h"
         "ChecksumVisitor.h"
         "ChecksumVisitor.cpp"

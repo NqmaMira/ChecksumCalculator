@@ -4,6 +4,51 @@
 #include <fstream>
 #include <iostream>
 
+ChecksumVisitor::ChecksumVisitor(IChecksumCalculator& calc, uint64_t total)
+    : calculator(calc), totalSize(total) { }
+
+void ChecksumVisitor::restoreFromMemento(const ChecksumMemento& memento) {
+    this->totalProcessed = memento.getProcessedBytes();
+    this->finishedPaths = memento.getCompletedFiles();
+    this->currentFile = memento.getCurrentFile();
+    this->pausePending = false;
+    this->paused = false;
+}
+
+uint64_t ChecksumVisitor::getTotalProcessed() const {
+    return totalProcessed;
+}
+
+const std::set<std::string>& ChecksumVisitor::getCompletedFiles() const {
+    return finishedPaths;
+}
+
+const std::string& ChecksumVisitor::getCurrentFile() const {
+    return currentFile;
+}
+
+std::unique_ptr<ChecksumMemento> ChecksumVisitor::createMemento() const {
+    return std::make_unique<ChecksumMemento>(totalProcessed, finishedPaths, currentFile);
+}
+
+void ChecksumVisitor::stop() {
+    shouldStop.store(true);
+}
+
+bool ChecksumVisitor::hasStopped() const {
+    return shouldStop.load();
+}
+
+bool ChecksumVisitor::hasPaused() const {
+    return paused;
+}
+
+void ChecksumVisitor::resume() {
+    paused = false;
+    pausePending = false;
+    clearPauseRequest();
+}
+
 void ChecksumVisitor::visitFile(FileNode& file) {
     const std::string path = file.getPath();
 
