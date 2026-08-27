@@ -44,11 +44,11 @@ TEST_CASE("ChecksumVisitor traverses and notifies with real-time updates", "[vis
     std::string path2 = create_file("b.txt", "67890");
     
     MD5Calculator calc;
-    auto root = std::make_shared<DirectoryNode>("root", testDir.string());
-    auto f1 = std::make_shared<FileNode>("a.txt", path1, FileSize);
-    auto f2 = std::make_shared<FileNode>("b.txt", path2, FileSize);
-    root->addComponent(f1);
-    root->addComponent(f2);
+    auto root = std::make_unique<DirectoryNode>("root", testDir.string());
+    auto f1 = std::make_unique<FileNode>("a.txt", path1, FileSize);
+    auto f2 = std::make_unique<FileNode>("b.txt", path2, FileSize);
+    root->addComponent(std::move(f1));
+    root->addComponent(std::move(f2));
 
     MockObserver mock;
     ChecksumVisitor visitor(calc, root->getSize());
@@ -77,7 +77,7 @@ TEST_CASE("ChecksumVisitor with Memento and Real Files", "[visitor]") {
     }
 
     MD5Calculator calc;
-    auto fileNode = std::make_shared<FileNode>("test_data.bin", tempFile.string(), TestFileSize);
+    auto fileNode = std::make_unique<FileNode>("test_data.bin", tempFile.string(), TestFileSize);
 
     SECTION("Normal Visit") {
         ChecksumVisitor visitor(calc, TestFileSize);
@@ -112,11 +112,13 @@ TEST_CASE("ChecksumVisitor pauses at a file boundary and resumes", "[pause][resu
     std::ofstream(path1, std::ios::binary) << std::string(FileSize, 'a');
     std::ofstream(path2, std::ios::binary) << std::string(FileSize, 'b');
 
-    auto root = std::make_shared<DirectoryNode>("root", testDir.string());
-    auto file1 = std::make_shared<FileNode>("a.bin", path1, FileSize);
-    auto file2 = std::make_shared<FileNode>("b.bin", path2, FileSize);
-    root->addComponent(file1);
-    root->addComponent(file2);
+    auto root = std::make_unique<DirectoryNode>("root", testDir.string());
+    auto file1 = std::make_unique<FileNode>("a.bin", path1, FileSize);
+    auto file2 = std::make_unique<FileNode>("b.bin", path2, FileSize);
+    auto& file1Ref = *file1;
+    auto& file2Ref = *file2;
+    root->addComponent(std::move(file1));
+    root->addComponent(std::move(file2));
 
     MD5Calculator calculator;
     ChecksumVisitor visitor(calculator, TotalSize);
@@ -126,15 +128,15 @@ TEST_CASE("ChecksumVisitor pauses at a file boundary and resumes", "[pause][resu
 
     REQUIRE(visitor.hasPaused());
     REQUIRE(visitor.getTotalProcessed() == FileSize);
-    REQUIRE_FALSE(file1->getHash().empty());
-    REQUIRE(file2->getHash().empty());
+    REQUIRE_FALSE(file1Ref.getHash().empty());
+    REQUIRE(file2Ref.getHash().empty());
 
     visitor.resume();
     root->accept(visitor);
 
     REQUIRE_FALSE(visitor.hasPaused());
     REQUIRE(visitor.getTotalProcessed() == TotalSize);
-    REQUIRE_FALSE(file2->getHash().empty());
+    REQUIRE_FALSE(file2Ref.getHash().empty());
 
     fs::remove_all(testDir);
 }
@@ -150,11 +152,13 @@ TEST_CASE("ChecksumVisitor stops traversal after a stop request", "[stop]") {
     std::ofstream(path1, std::ios::binary) << std::string(FileSize, 'a');
     std::ofstream(path2, std::ios::binary) << std::string(FileSize, 'b');
 
-    auto root = std::make_shared<DirectoryNode>("root", testDir.string());
-    auto file1 = std::make_shared<FileNode>("a.bin", path1, FileSize);
-    auto file2 = std::make_shared<FileNode>("b.bin", path2, FileSize);
-    root->addComponent(file1);
-    root->addComponent(file2);
+    auto root = std::make_unique<DirectoryNode>("root", testDir.string());
+    auto file1 = std::make_unique<FileNode>("a.bin", path1, FileSize);
+    auto file2 = std::make_unique<FileNode>("b.bin", path2, FileSize);
+    auto& file1Ref = *file1;
+    auto& file2Ref = *file2;
+    root->addComponent(std::move(file1));
+    root->addComponent(std::move(file2));
 
     MD5Calculator calculator;
     ChecksumVisitor visitor(calculator, TotalSize);
@@ -168,8 +172,8 @@ TEST_CASE("ChecksumVisitor stops traversal after a stop request", "[stop]") {
 
     REQUIRE(visitor.hasStopped());
     REQUIRE(visitor.getTotalProcessed() == FileSize);
-    REQUIRE_FALSE(file1->getHash().empty());
-    REQUIRE(file2->getHash().empty());
+    REQUIRE_FALSE(file1Ref.getHash().empty());
+    REQUIRE(file2Ref.getHash().empty());
 
     fs::remove_all(testDir);
 }

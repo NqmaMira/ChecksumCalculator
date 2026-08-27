@@ -1,5 +1,7 @@
 #pragma once
 #include "IVisitor.h"
+#include "FileNode.h"
+#include "DirectoryNode.h"
 #include <iostream>
 #include <vector>
 
@@ -24,7 +26,7 @@ public:
         out << "\"" << dir.getName() << "\": [\n";
         indent++;
 
-        auto children = dir.getChildren();
+        const auto& children = dir.getChildren();
         for (size_t i = 0; i < children.size(); ++i) {
             children[i]->accept(*this);
             if (i < children.size() - 1) out << ",";

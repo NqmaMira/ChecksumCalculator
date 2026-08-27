@@ -19,25 +19,28 @@ TEST_CASE("MD5 Calculator verifies known strings", "[checksum]") {
 }
 
 TEST_CASE("Composite pattern correctly calculates sizes", "[composite]") {
-    auto root = std::make_shared<DirectoryNode>("root", "/root");
+    auto root = std::make_unique<DirectoryNode>("root", "/root");
     constexpr size_t FileOneSize = 1000;
     constexpr size_t FileTwoSize = 500;
     constexpr size_t TotalTreeSize = FileOneSize + FileTwoSize;
-    auto file1 = std::make_shared<FileNode>("file1.txt", "/root/file1.txt", FileOneSize);
-    auto subDir = std::make_shared<DirectoryNode>("subdir", "/root/subdir");
-    auto file2 = std::make_shared<FileNode>("file2.txt", "/root/subdir/file2.txt", FileTwoSize);
+    auto file1 = std::make_unique<FileNode>("file1.txt", "/root/file1.txt", FileOneSize);
+    auto subDir = std::make_unique<DirectoryNode>("subdir", "/root/subdir");
+    auto file2 = std::make_unique<FileNode>("file2.txt", "/root/subdir/file2.txt", FileTwoSize);
+    auto& subDirRef = *subDir;
+    auto& file1Ref = *file1;
+    auto& file2Ref = *file2;
 
-    subDir->addComponent(file2);
-    root->addComponent(file1);
-    root->addComponent(subDir);
+    subDir->addComponent(std::move(file2));
+    root->addComponent(std::move(file1));
+    root->addComponent(std::move(subDir));
 
     SECTION("File nodes return their individual size") {
-        REQUIRE(file1->getSize() == FileOneSize);
-        REQUIRE(file2->getSize() == FileTwoSize);
+        REQUIRE(file1Ref.getSize() == FileOneSize);
+        REQUIRE(file2Ref.getSize() == FileTwoSize);
     }
 
     SECTION("Directory nodes return the sum of children") {
-        REQUIRE(subDir->getSize() == FileTwoSize);
+        REQUIRE(subDirRef.getSize() == FileTwoSize);
         REQUIRE(root->getSize() == TotalTreeSize);
     }
 }

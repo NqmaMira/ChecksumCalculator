@@ -7,17 +7,17 @@
 TEST_CASE("Report Visitors generate correct format", "[report]") {
     constexpr size_t FirstFileSize = 100;
     constexpr size_t SecondFileSize = 200;
-    auto root = std::make_shared<DirectoryNode>("root", "/root");
-    auto f1 = std::make_shared<FileNode>("file1.bin", "/root/file1.bin", FirstFileSize);
+    auto root = std::make_unique<DirectoryNode>("root", "/root");
+    auto f1 = std::make_unique<FileNode>("file1.bin", "/root/file1.bin", FirstFileSize);
     f1->setHash("d41d8cd98f00b204e9800998ecf8427e");
 
-    auto sub = std::make_shared<DirectoryNode>("sub", "/root/sub");
-    auto f2 = std::make_shared<FileNode>("file2.bin", "/root/sub/file2.bin", SecondFileSize);
+    auto sub = std::make_unique<DirectoryNode>("sub", "/root/sub");
+    auto f2 = std::make_unique<FileNode>("file2.bin", "/root/sub/file2.bin", SecondFileSize);
     f2->setHash("098f6bcd4621d373cade4e832627b4f6");
 
-    sub->addComponent(f2);
-    root->addComponent(f1);
-    root->addComponent(sub);
+    sub->addComponent(std::move(f2));
+    root->addComponent(std::move(f1));
+    root->addComponent(std::move(sub));
 
     SECTION("Plain Text (Linux *sum format)") {
         std::stringstream ss;

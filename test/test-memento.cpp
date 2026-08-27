@@ -27,17 +27,18 @@ TEST_CASE("Memento saves and restores state correctly", "[memento]") {
     write_file(p2, SecondFileSize);
 
     MD5Calculator calc;
-    auto root = std::make_shared<DirectoryNode>("root", testDir.string());
-    auto f1 = std::make_shared<FileNode>("file1.bin", p1, FirstFileSize);
-    auto f2 = std::make_shared<FileNode>("file2.bin", p2, SecondFileSize);
-    root->addComponent(f1);
-    root->addComponent(f2);
+    auto root = std::make_unique<DirectoryNode>("root", testDir.string());
+    auto f1 = std::make_unique<FileNode>("file1.bin", p1, FirstFileSize);
+    auto f2 = std::make_unique<FileNode>("file2.bin", p2, SecondFileSize);
+    auto& f1Ref = *f1;
+    root->addComponent(std::move(f1));
+    root->addComponent(std::move(f2));
 
     uint64_t totalSize = root->getSize();
 
     SECTION("Partial execution and resume") {
         ChecksumVisitor visitor1(calc, totalSize);
-        f1->accept(visitor1);
+        f1Ref.accept(visitor1);
 
         auto memento = visitor1.createMemento();
         REQUIRE(visitor1.getTotalProcessed() == FirstFileSize);

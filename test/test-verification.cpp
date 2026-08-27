@@ -13,20 +13,20 @@ TEST_CASE("Verification logic handles all 4 cases", "[verification]") {
         {"/root/removed.bin", "cccc"}
     };
 
-    auto root = std::make_shared<DirectoryNode>("root", "/root");
+    auto root = std::make_unique<DirectoryNode>("root", "/root");
 
-    auto f_unchanged = std::make_shared<FileNode>("unchanged.bin", "/root/unchanged.bin", TestFileSize);
+    auto f_unchanged = std::make_unique<FileNode>("unchanged.bin", "/root/unchanged.bin", TestFileSize);
     f_unchanged->setHash("aaaa");
 
-    auto f_changed = std::make_shared<FileNode>("changed.bin", "/root/changed.bin", TestFileSize);
+    auto f_changed = std::make_unique<FileNode>("changed.bin", "/root/changed.bin", TestFileSize);
     f_changed->setHash("xxxx");
 
-    auto f_new = std::make_shared<FileNode>("new.bin", "/root/new.bin", TestFileSize);
+    auto f_new = std::make_unique<FileNode>("new.bin", "/root/new.bin", TestFileSize);
     f_new->setHash("dddd");
 
-    root->addComponent(f_unchanged);
-    root->addComponent(f_changed);
-    root->addComponent(f_new);
+    root->addComponent(std::move(f_unchanged));
+    root->addComponent(std::move(f_changed));
+    root->addComponent(std::move(f_new));
 
     VerificationVisitor verifier(saved);
     root->accept(verifier);
