@@ -12,6 +12,7 @@ private:
     uint64_t totalSize;
     uint64_t totalProcessed = 0;
     std::set<std::string> finishedPaths;
+    std::string currentFile;
     std::atomic<bool> shouldStop = false;
     bool pausePending = false;
     bool paused = false;
@@ -25,26 +26,35 @@ public:
     void restoreFromMemento(const ChecksumMemento& memento) {
         this->totalProcessed = memento.getProcessedBytes();
         this->finishedPaths = memento.getCompletedFiles();
+        this->currentFile = memento.getCurrentFile();
         this->pausePending = false;
         this->paused = false;
     }
 
-    uint64_t getTotalProcessed() const { 
-        return totalProcessed; 
+    uint64_t getTotalProcessed() const {
+        return totalProcessed;
+    }
+
+    const std::set<std::string>& getCompletedFiles() const {
+        return finishedPaths;
+    }
+
+    const std::string& getCurrentFile() const {
+        return currentFile;
     }
 
     std::unique_ptr<ChecksumMemento> createMemento() const {
-        return std::unique_ptr<ChecksumMemento>(new ChecksumMemento(totalProcessed, finishedPaths));
+        return std::make_unique<ChecksumMemento>(totalProcessed, finishedPaths, currentFile);
     }
 
-    void stop() { 
+    void stop() {
         shouldStop.store(true);
     }
-    bool hasStopped() const { 
+    bool hasStopped() const {
         return shouldStop.load();
     }
-    bool hasPaused() const { 
-        return paused; 
+    bool hasPaused() const {
+        return paused;
     }
     void resume() {
         paused = false;

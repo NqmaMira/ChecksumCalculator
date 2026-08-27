@@ -5,13 +5,16 @@
 #include <iostream>
 
 void ChecksumVisitor::visitFile(FileNode& file) {
-    if (shouldStop || paused || finishedPaths.count(file.getPath())) {
+    const std::string path = file.getPath();
+
+    if (shouldStop || paused || finishedPaths.count(path)) {
         return;
     }
 
-    notifyFileStart(file.getPath());
+    currentFile = path;
+    notifyFileStart(path);
 
-    std::ifstream ifs(file.getPath(), std::ios::binary);
+    std::ifstream ifs(path, std::ios::binary);
 
     auto progressLambda = [this](size_t bytesInChunk) {
         this->totalProcessed += bytesInChunk;
@@ -26,14 +29,15 @@ void ChecksumVisitor::visitFile(FileNode& file) {
     try {
         std::string hash = calculator.calculate(ifs, progressLambda, pauseLambda);
         file.setHash(hash);
-        finishedPaths.insert(file.getPath());
-        notifyFileEnd(file.getPath(), hash);
+        finishedPaths.insert(path);
+        currentFile.clear();
+        notifyFileEnd(path, hash);
         if (pausePending) {
             paused = true;
         }
     }
     catch (const std::exception& e) {
-		std::cerr << "Error processing file " << file.getPath() << ": " << e.what() << std::endl;
+		std::cerr << "Error processing file " << path << ": " << e.what() << std::endl;
         return;
 	}
 }

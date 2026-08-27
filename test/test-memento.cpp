@@ -51,5 +51,19 @@ TEST_CASE("Memento saves and restores state correctly", "[memento]") {
         REQUIRE(visitor2.getTotalProcessed() == ExpectedTotalSize);
     }
 
+    SECTION("Checkpoint includes the full paused state needed for resume") {
+        ChecksumVisitor visitor(calc, totalSize);
+        visitor.requestPause();
+
+        f1Ref.accept(visitor);
+
+        REQUIRE(visitor.hasPaused());
+
+        const auto memento = visitor.createMemento();
+        REQUIRE(memento->getProcessedBytes() == visitor.getTotalProcessed());
+        REQUIRE(memento->getCompletedFiles() == visitor.getCompletedFiles());
+        REQUIRE(memento->getCurrentFile() == visitor.getCurrentFile());
+    }
+
     fs::remove_all(testDir);
 }

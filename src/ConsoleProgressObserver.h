@@ -4,7 +4,6 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-#include <memory>
 
 class ConsoleProgressObserver : public IProgressObserver {
 private:
@@ -46,11 +45,6 @@ public:
     void onFileEnd(const std::string& path, const std::string& hash) override {
 		currentFile.clear();
         std::cout << "\n[Done]: " << hash << "\n" << std::endl;
-    }
-
-    std::unique_ptr<ChecksumMemento> createMemento() const {
-        return std::unique_ptr<ChecksumMemento>(
-            new ChecksumMemento(processedBytes, {}, currentFile));
     }
 
     void restoreFromMemento(const ChecksumMemento& memento) {

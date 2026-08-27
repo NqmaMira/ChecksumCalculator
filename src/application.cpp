@@ -120,9 +120,13 @@ int main(int argc, char* argv[]) {
             std::cout << "Commands: pause, resume, quit" << std::endl;
             waitForScan();
 
+            std::unique_ptr<ChecksumMemento> savedCheckpoint;
+
             while (hasher.hasPaused()) {
-                auto savedState = hasher.createMemento();
-                auto progressState = progressReporter.createMemento();
+                if (!savedCheckpoint) {
+                    savedCheckpoint = hasher.createMemento();
+                }
+
                 std::cout << "Paused. Enter resume or quit." << std::endl;
 
                 std::string command;
@@ -134,9 +138,10 @@ int main(int argc, char* argv[]) {
                     continue;
                 }
 
-                hasher.restoreFromMemento(*savedState);
+                hasher.restoreFromMemento(*savedCheckpoint);
+                progressReporter.restoreFromMemento(*savedCheckpoint);
                 hasher.resume();
-                progressReporter.restoreFromMemento(*progressState);
+                savedCheckpoint.reset();
                 startScan();
                 waitForScan();
             }
