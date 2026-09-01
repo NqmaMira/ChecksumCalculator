@@ -46,8 +46,14 @@ bool ChecksumController::run() {
 
 void ChecksumController::startScan() {
     scanFinished = false;
+    scanException = nullptr;
     scanThread = std::thread([this]() {
-        root.accept(hasher);
+        try {
+            root.accept(hasher);
+        }
+        catch (...) {
+            scanException = std::current_exception();
+        }
         scanFinished = true;
     });
 }
@@ -60,6 +66,10 @@ void ChecksumController::waitForScan() {
         std::this_thread::sleep_for(scanInterval);
     }
     joinScanThread();
+
+    if (scanException) {
+        std::rethrow_exception(scanException);
+    }
 }
 
 void ChecksumController::handleCommand(const std::string& command) {

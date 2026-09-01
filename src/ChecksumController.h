@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <chrono>
+#include <exception>
 #include <functional>
 #include <istream>
 #include <memory>
@@ -43,5 +44,6 @@ private:
     std::chrono::milliseconds scanInterval;
     std::thread scanThread;
     std::atomic<bool> scanFinished = false;
+    std::exception_ptr scanException;
     std::unique_ptr<ChecksumMemento> savedCheckpoint;
 };

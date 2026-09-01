@@ -11,7 +11,11 @@ private:
     std::ostream& out;
     int indent = 0;
 
-    void printIndent() { for (int i = 0; i < indent; ++i) out << "  "; }
+    void printIndent() { 
+        for (int i = 0; i < indent; ++i) {
+            out << "  "; 
+        }
+    }
 
     static std::string escapeJson(const std::string& value) {
         std::string escaped;

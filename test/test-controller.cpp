@@ -8,6 +8,7 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -58,4 +59,33 @@ TEST_CASE("ChecksumController resumes a paused scan", "[controller][pause][resum
     REQUIRE_FALSE(root->getHash().empty());
 
     fs::remove(testFile);
+}
+
+class ThrowingComponent : public FileSystemComponent {
+public:
+    ThrowingComponent() : FileSystemComponent("throwing", "throwing") {}
+
+    uint64_t getSize() const override { 
+        return 0; 
+    }
+    bool isDirectory() const override { 
+        return false; 
+    }
+
+    void accept(IVisitor&) override {
+        throw std::runtime_error("Simulated traversal failure");
+    }
+};
+
+TEST_CASE("ChecksumController rethrows scan-thread errors", "[controller][exceptions]") {
+    ThrowingComponent root;
+    MD5Calculator calculator;
+    ChecksumVisitor hasher(calculator, 0);
+    ConsoleProgressObserver progressReporter;
+    std::ostringstream output;
+
+    ChecksumController controller(root, hasher, progressReporter, output,
+        [] { return false; }, [] { return std::string(); });
+
+    REQUIRE_THROWS_WITH(controller.run(), "Simulated traversal failure");
 }
