@@ -3,22 +3,22 @@
 #include "MD5Calculator.h"
 #include "FileNode.h"
 #include "DirectoryNode.h"
+#include "test-filesystem.h"
 #include <fstream>
 #include <filesystem>
 
 namespace fs = std::filesystem;
 
 void write_file(const std::string& path, size_t size) {
-    std::ofstream ofs(path, std::ios::binary);
-    std::string data(size, 'x');
-    ofs << data;
+    test_support::writeRepeated(path, size, 'x');
 }
 
 TEST_CASE("Memento saves and restores state correctly", "[memento]") {
     constexpr size_t FirstFileSize = 100;
     constexpr size_t SecondFileSize = 200;
     constexpr size_t ExpectedTotalSize = FirstFileSize + SecondFileSize;
-    fs::path testDir = fs::current_path() / "memento_test";
+    test_support::TemporaryDirectory temporaryDirectory;
+    fs::path testDir = temporaryDirectory.path() / "memento_test";
     fs::create_directories(testDir);
 
     std::string p1 = (testDir / "file1.bin").string();
@@ -65,5 +65,4 @@ TEST_CASE("Memento saves and restores state correctly", "[memento]") {
         REQUIRE(memento->getCurrentFile() == visitor.getCurrentFile());
     }
 
-    fs::remove_all(testDir);
 }

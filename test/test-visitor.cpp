@@ -3,6 +3,7 @@
 #include "MD5Calculator.h"
 #include "FileNode.h"
 #include "DirectoryNode.h"
+#include "test-filesystem.h"
 #include <fstream>
 #include <filesystem>
 #include <functional>
@@ -31,12 +32,12 @@ public:
 TEST_CASE("ChecksumVisitor traverses and notifies with real-time updates", "[visitor]") {
     constexpr size_t FileSize = 5;
     constexpr size_t ExpectedTotalSize = 2 * FileSize;
-    fs::path testDir = fs::current_path() / "visitor_test_temp";
+    test_support::TemporaryDirectory temporaryDirectory;
+    fs::path testDir = temporaryDirectory.path() / "visitor_test_temp";
     fs::create_directory(testDir);
 
     auto create_file = [&](const std::string& name, const std::string& content) {
-        std::ofstream ofs(testDir / name, std::ios::binary);
-        ofs << content;
+        test_support::writeFile(testDir / name, content);
         return (testDir / name).string();
         };
 
@@ -65,16 +66,13 @@ TEST_CASE("ChecksumVisitor traverses and notifies with real-time updates", "[vis
         REQUIRE(mock.lastBytes == ExpectedTotalSize);
         REQUIRE(mock.totalSizeExpected == ExpectedTotalSize);
     }
-    fs::remove_all(testDir);
 }
 
 TEST_CASE("ChecksumVisitor with Memento and Real Files", "[visitor]") {
     constexpr size_t TestFileSize = 10000;
-    fs::path tempFile = fs::current_path() / "test_data.bin";
-    {
-        std::ofstream ofs(tempFile, std::ios::binary);
-        ofs << std::string(TestFileSize, 'A');
-    }
+    test_support::TemporaryDirectory temporaryDirectory;
+    fs::path tempFile = temporaryDirectory.path() / "test_data.bin";
+    test_support::writeRepeated(tempFile, TestFileSize, 'A');
 
     MD5Calculator calc;
     auto fileNode = std::make_unique<FileNode>("test_data.bin", tempFile.string(), TestFileSize);
@@ -98,19 +96,19 @@ TEST_CASE("ChecksumVisitor with Memento and Real Files", "[visitor]") {
         REQUIRE(visitor2.getTotalProcessed() == TestFileSize);
     }
 
-    fs::remove(tempFile);
 }
 
 TEST_CASE("ChecksumVisitor pauses at a file boundary and resumes", "[pause][resume]") {
     constexpr size_t FileSize = 4 * 1024;
     constexpr size_t TotalSize = 2 * FileSize;
-    fs::path testDir = fs::current_path() / "pause_resume_test_temp";
+    test_support::TemporaryDirectory temporaryDirectory;
+    fs::path testDir = temporaryDirectory.path() / "pause_resume_test_temp";
     fs::create_directory(testDir);
 
     auto path1 = (testDir / "a.bin").string();
     auto path2 = (testDir / "b.bin").string();
-    std::ofstream(path1, std::ios::binary) << std::string(FileSize, 'a');
-    std::ofstream(path2, std::ios::binary) << std::string(FileSize, 'b');
+    test_support::writeRepeated(path1, FileSize, 'a');
+    test_support::writeRepeated(path2, FileSize, 'b');
 
     auto root = std::make_unique<DirectoryNode>("root", testDir.string());
     auto file1 = std::make_unique<FileNode>("a.bin", path1, FileSize);
@@ -138,19 +136,19 @@ TEST_CASE("ChecksumVisitor pauses at a file boundary and resumes", "[pause][resu
     REQUIRE(visitor.getTotalProcessed() == TotalSize);
     REQUIRE_FALSE(file2Ref.getHash().empty());
 
-    fs::remove_all(testDir);
 }
 
 TEST_CASE("ChecksumVisitor stops traversal after a stop request", "[stop]") {
     constexpr size_t FileSize = 4 * 1024;
     constexpr size_t TotalSize = 2 * FileSize;
-    fs::path testDir = fs::current_path() / "stop_test_temp";
+    test_support::TemporaryDirectory temporaryDirectory;
+    fs::path testDir = temporaryDirectory.path() / "stop_test_temp";
     fs::create_directory(testDir);
 
     auto path1 = (testDir / "a.bin").string();
     auto path2 = (testDir / "b.bin").string();
-    std::ofstream(path1, std::ios::binary) << std::string(FileSize, 'a');
-    std::ofstream(path2, std::ios::binary) << std::string(FileSize, 'b');
+    test_support::writeRepeated(path1, FileSize, 'a');
+    test_support::writeRepeated(path2, FileSize, 'b');
 
     auto root = std::make_unique<DirectoryNode>("root", testDir.string());
     auto file1 = std::make_unique<FileNode>("a.bin", path1, FileSize);
@@ -175,5 +173,4 @@ TEST_CASE("ChecksumVisitor stops traversal after a stop request", "[stop]") {
     REQUIRE_FALSE(file1Ref.getHash().empty());
     REQUIRE(file2Ref.getHash().empty());
 
-    fs::remove_all(testDir);
 }

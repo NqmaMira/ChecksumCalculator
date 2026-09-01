@@ -11,13 +11,15 @@ target_link_libraries(
 target_sources(
     unit-tests
     PRIVATE
+        "test-filesystem.h"
         "test-checksum.cpp"
         "test-builder.cpp"
         "test-visitor.cpp"
         "test-memento.cpp"
         "test-report.cpp"
         "test-verification.cpp"
-        "test-controller.cpp")
+        "test-controller.cpp"
+)
 
 # Automatically register all tests
 catch_discover_tests(unit-tests ADD_TAGS_AS_LABELS)

@@ -1,21 +1,21 @@
 #include "catch2/catch_all.hpp"
 #include "DirectoryTreeBuilder.h"
+#include "test-filesystem.h"
 #include <fstream>
 #include <filesystem>
 
 namespace fs = std::filesystem;
 
 void create_dummy_file(const fs::path& p, size_t size) {
-    std::ofstream ofs(p, std::ios::binary);
-    std::vector<char> dummy(size, 0);
-    ofs.write(dummy.data(), size);
+    test_support::writeRepeated(p, size, 0);
 }
 
 TEST_CASE("DirectoryTreeBuilder creates correct structure", "[builder]") {
     constexpr size_t FirstFileSize = 100;
     constexpr size_t SecondFileSize = 250;
     constexpr size_t ExpectedDirectorySize = FirstFileSize + SecondFileSize;
-    fs::path testDir = fs::current_path() / "test_root";
+    test_support::TemporaryDirectory temporaryDirectory;
+    fs::path testDir = temporaryDirectory.path() / "test_root";
     fs::create_directories(testDir / "subdir");
 
     create_dummy_file(testDir / "file1.dat", FirstFileSize);
@@ -38,7 +38,6 @@ TEST_CASE("DirectoryTreeBuilder creates correct structure", "[builder]") {
         #endif
     }
 
-    fs::remove_all(testDir);
 }
 
 TEST_CASE("DirectoryTreeBuilder handles non-existent paths", "[builder]") {

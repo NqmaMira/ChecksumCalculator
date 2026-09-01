@@ -4,6 +4,7 @@
 #include "DirectoryNode.h"
 #include "FileNode.h"
 #include "MD5Calculator.h"
+#include "test-filesystem.h"
 
 #include <filesystem>
 #include <fstream>
@@ -15,9 +16,10 @@
 namespace fs = std::filesystem;
 
 TEST_CASE("ChecksumController runs a checksum scan", "[controller]") {
-    const fs::path testFile = fs::current_path() / "controller_test.bin";
+    test_support::TemporaryDirectory temporaryDirectory;
+    const fs::path testFile = temporaryDirectory.path() / "controller_test.bin";
     constexpr size_t FileSize = 4096;
-    std::ofstream(testFile, std::ios::binary) << std::string(FileSize, 'x');
+    test_support::writeRepeated(testFile, FileSize, 'x');
 
     auto root = std::make_unique<FileNode>(testFile.filename().string(), testFile.string(), FileSize);
     MD5Calculator calculator;
@@ -32,13 +34,13 @@ TEST_CASE("ChecksumController runs a checksum scan", "[controller]") {
     REQUIRE_FALSE(root->getHash().empty());
     REQUIRE(hasher.getTotalProcessed() == FileSize);
 
-    fs::remove(testFile);
 }
 
 TEST_CASE("ChecksumController resumes a paused scan", "[controller][pause][resume]") {
-    const fs::path testFile = fs::current_path() / "controller_pause_test.bin";
+    test_support::TemporaryDirectory temporaryDirectory;
+    const fs::path testFile = temporaryDirectory.path() / "controller_pause_test.bin";
     constexpr size_t FileSize = 4096;
-    std::ofstream(testFile, std::ios::binary) << std::string(FileSize, 'x');
+    test_support::writeRepeated(testFile, FileSize, 'x');
 
     auto root = std::make_unique<FileNode>(testFile.filename().string(), testFile.string(), FileSize);
     MD5Calculator calculator;
@@ -58,7 +60,6 @@ TEST_CASE("ChecksumController resumes a paused scan", "[controller][pause][resum
     REQUIRE(hasher.getTotalProcessed() == FileSize);
     REQUIRE_FALSE(root->getHash().empty());
 
-    fs::remove(testFile);
 }
 
 class ThrowingComponent : public FileSystemComponent {
