@@ -16,7 +16,7 @@ private:
 
 public:
     TemporaryDirectory() {
-        static std::atomic<unsigned long long> counter{ 0 };
+        static std::atomic<unsigned long long> counter{0};
         const auto timestamp = std::chrono::steady_clock::now().time_since_epoch().count();
         directory = fs::temp_directory_path()
             / ("ChecksumCalculator-" + std::to_string(timestamp)

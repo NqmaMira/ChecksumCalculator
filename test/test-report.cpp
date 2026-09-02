@@ -1,11 +1,11 @@
 #include <catch2/catch_all.hpp>
 #include "FileNode.h"
 #include "DirectoryNode.h"
-#include "JsonReportVisitor.h"
-#include "PlainTextReportVisitor.h"
+#include "JsonReportObserver.h"
+#include "PlainTextReportObserver.h"
 #include <sstream>
 
-TEST_CASE("Report Visitors generate correct format", "[report]") {
+TEST_CASE("Report Observers generate correct format", "[report]") {
     constexpr size_t FirstFileSize = 100;
     constexpr size_t SecondFileSize = 200;
     auto root = std::make_unique<DirectoryNode>("root", "/root");
@@ -22,25 +22,43 @@ TEST_CASE("Report Visitors generate correct format", "[report]") {
 
     SECTION("Plain Text (Linux *sum format)") {
         std::stringstream ss;
-        PlainTextReportVisitor reporter(ss);
-        root->accept(reporter);
+        PlainTextReportObserver reporter(ss);
 
-        std::string output = ss.str();
+        reporter.onFileEnd("/root/file1.bin", "d41d8cd98f00b204e9800998ecf8427e");
+        reporter.onFileEnd("/root/sub/file2.bin", "098f6bcd4621d373cade4e832627b4f6");
+
+        const std::string output = ss.str();
         REQUIRE(output.find("d41d8cd98f00b204e9800998ecf8427e */root/file1.bin") != std::string::npos);
         REQUIRE(output.find("098f6bcd4621d373cade4e832627b4f6 */root/sub/file2.bin") != std::string::npos);
     }
 
-    SECTION("JSON tree format") {
+    SECTION("JSON array format") {
         std::stringstream ss;
-        JsonReportVisitor reporter(ss);
-        root->accept(reporter);
+        JsonReportObserver reporter(ss);
+
+        reporter.onFileEnd("/root/file1.bin", "d41d8cd98f00b204e9800998ecf8427e");
+        reporter.onFileEnd("/root/sub/file2.bin", "098f6bcd4621d373cade4e832627b4f6");
+        reporter.close();
 
         const std::string output = ss.str();
-        REQUIRE(output.find("{\n") == 0);
+        REQUIRE(output.find("[\n") == 0);
         REQUIRE(output.size() >= 3);
-        REQUIRE(output.compare(output.size() - 3, 3, "\n}\n") == 0);
-        REQUIRE(output.find("\"root\": [") != std::string::npos);
-        REQUIRE(output.find("{ \"file\": \"file1.bin\", \"hash\": \"d41d8cd98f00b204e9800998ecf8427e\" }") != std::string::npos);
-        REQUIRE(output.find("{ \"file\": \"file2.bin\", \"hash\": \"098f6bcd4621d373cade4e832627b4f6\" }") != std::string::npos);
+        REQUIRE(output.find("\"file\": \"file1.bin\"") != std::string::npos);
+        REQUIRE(output.find("\"hash\": \"d41d8cd98f00b204e9800998ecf8427e\"") != std::string::npos);
+        REQUIRE(output.find("\"file\": \"file2.bin\"") != std::string::npos);
+        REQUIRE(output.find("\"hash\": \"098f6bcd4621d373cade4e832627b4f6\"") != std::string::npos);
+        REQUIRE(output.find("\n]\n") != std::string::npos);
+    }
+
+    SECTION("Report observers stream output as files finish") {
+        std::stringstream ss;
+        PlainTextReportObserver reporter(ss);
+
+        reporter.onFileEnd("/root/file1.bin", "d41d8cd98f00b204e9800998ecf8427e");
+        reporter.onFileEnd("/root/sub/file2.bin", "098f6bcd4621d373cade4e832627b4f6");
+
+        const std::string output = ss.str();
+        REQUIRE(output.find("d41d8cd98f00b204e9800998ecf8427e */root/file1.bin") != std::string::npos);
+        REQUIRE(output.find("098f6bcd4621d373cade4e832627b4f6 */root/sub/file2.bin") != std::string::npos);
     }
 }
